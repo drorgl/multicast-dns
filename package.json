@@ -4,12 +4,15 @@
   "description": "Low level multicast-dns implementation in pure javascript",
   "main": "index.js",
   "scripts": {
-    "test": "standard && tape test.js"
+    "test": "tsc && tape dist/test.js"
   },
   "bin": "cli.js",
   "dependencies": {
-    "dns-packet": "^1.0.1",
-    "thunky": "^0.1.0"
+    "@types/node": "^7.0.13",
+    "@types/tape": "^4.2.29",
+    "dns-packet": "dror/dns-packet",
+    "thunky": "^0.1.0",
+    "typescript": "^2.2.2"
   },
   "devDependencies": {
     "standard": "^5.4.1",

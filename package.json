@@ -10,7 +10,7 @@
   "scripts": {
     "test": "tsc && node dist/tests/test.js"
   },
-  "bin": "./src/cli.js",
+  "bin": "./scripts/cli.js",
   "dependencies": {
     "@types/node": "^7.0.13",
     "@types/tape": "^4.2.29",

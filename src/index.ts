@@ -22,16 +22,26 @@ export interface IOptions {
 	loopback?: boolean;
 }
 
+export interface IRHInfo {
+	address?: string;
+	host?: string;
+	port: number;
+}
+
+export interface ISendCallback {
+	(error: Error, bytes: number): void;
+}
+
 export class mdns extends events.EventEmitter {
 	private port: number;
 	private socket: dgram.Socket;
-	private me: { address: string, port: number };
+	private me: IRHInfo;
 	private destroyed: boolean;
 
 	private messages: { [query_id: number]: packet.header.IHeaderRecord } = {};
 
 
-	constructor(private opts: IOptions) {
+	constructor(private opts?: IOptions) {
 		super();
 
 		if (!opts) { opts = {}; }
@@ -108,10 +118,26 @@ export class mdns extends events.EventEmitter {
 
 	}
 
-	public send(value: packet.header.IHeaderRecord, rinfo, cb) {
+	public on(event: "warning", listener?: (err: Error) => void): this;
+	public on(event: "error", listener?: (err: Error) => void): this;
+	public on(event: "response", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
+	public on(event: "query", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
+	public on(event: "query" | "error" | "warning" | "response", listener?: () => void): this {
+		return super.on(event, listener);
+	};
+
+	public once(event: "warning", listener?: (err: Error) => void): this;
+	public once(event: "error", listener?: (err: Error) => void): this;
+	public once(event: "response", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
+	public once(event: "query", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
+	public once(event: "query" | "error" | "warning" | "response", listener?: () => void): this {
+		return super.once(event, listener);
+	};
+
+	public send(value: packet.header.IHeaderRecord, rinfo: IRHInfo | ISendCallback, cb: ISendCallback): void {
 		if (typeof rinfo === "function") { return this.send(value, null, rinfo); }
 		if (!cb) { cb = noop; }
-		if (!rinfo) { rinfo = this.me; }
+		if (!rinfo) { rinfo = this.me as IRHInfo; }
 
 
 		// this.bind((err) => {
@@ -122,28 +148,30 @@ export class mdns extends events.EventEmitter {
 		// });
 	};
 
-	// public respond(res, rinfo, cb) {
-	// 	if (Array.isArray(res)) { res = { answers: res }; }
+	public respond(res: packet.header.IHeaderRecord | packet.answer.IAnswer[], rinfo?: IRHInfo, cb?: ISendCallback) {
+		if (Array.isArray(res)) {
+			res = { type: "response", answers: res };
+		}
 
-	// 	res.type = "response";
-	// 	this.send(res, rinfo, cb);
-	// };
+		res.type = "response";
+		this.send(res, rinfo, cb);
+	};
 
-	public query(q, type, rinfo, cb) {
+	public query(q: string | packet.header.IQuestion[] | packet.header.IHeaderRecord, type?: string | ISendCallback | IRHInfo, rinfo?: IRHInfo | ISendCallback, cb?: ISendCallback): void {
 		if (typeof type === "function") { return this.query(q, null, null, type); }
-		if (typeof type === "object" && type && type.port) { return this.query(q, null, type, rinfo); }
+		if (typeof type === "object" && type && type.port) { return this.query(q, null, type, rinfo as ISendCallback); }
 		if (typeof rinfo === "function") { return this.query(q, type, null, rinfo); }
 		if (!cb) { cb = noop; }
 
-		if (typeof q === "string") { q = [{ name: q, type: type || "ANY" }]; }
+		if (typeof q === "string") { q = [{ name: q, type: type || "ANY" }] as packet.header.IQuestion[]; }
 		if (Array.isArray(q)) { q = { type: "query", questions: q }; }
 
-		q.type = "query";
-		q.id = random_id();
-		this.send(q, rinfo, cb);
+		(q as packet.header.IHeaderRecord).type = "query";
+		(q as packet.header.IHeaderRecord).id = random_id();
+		this.send(q as packet.header.IHeaderRecord, rinfo, cb);
 	};
 
-	public destroy(cb) {
+	public destroy(cb: Function): void {
 		if (!cb) { cb = noop; }
 		if (this.destroyed) { return process.nextTick(cb); }
 		this.destroyed = true;

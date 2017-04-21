@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import mdns = require("./");
+import mdns_module = require("./index");
 import path = require("path");
 
 if (process.argv.length < 3) {
@@ -8,6 +8,8 @@ if (process.argv.length < 3) {
 	process.exit(1);
 }
 let hostname = process.argv[2];
+
+let mdns = new mdns_module.mdns();
 
 mdns.on("response", (response) => {
 	response.answers.forEach((answer) => {

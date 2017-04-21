@@ -1,18 +1,20 @@
-import mdns = require("./");
+import mdns_module = require("./index");
 
-mdns.on("warning",  (err) =>{
+let mdns = new mdns_module.mdns();
+
+mdns.on("warning", (err) => {
 	console.log(err.stack);
 });
 
-mdns.on("response",  (response) =>{
+mdns.on("response", (response) => {
 	console.log("got a response packet:", response);
 });
 
-mdns.on("query",  (query) =>{
+mdns.on("query", (query) => {
 	console.log("got a query packet:", query);
 
 	// iterate over all questions to check if we should respond
-	query.questions.forEach( (q) =>{
+	query.questions.forEach((q) => {
 		if (q.type === "A" && q.name === "example.local") {
 			// send an A-record response for example.local
 			mdns.respond({

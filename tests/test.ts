@@ -1,8 +1,8 @@
-import mdns = require("./");
+import mdns = require("../src/index");
 import tape = require("tape");
 import dgram = require("dgram");
 
-let port = (cb) => {
+let port = (cb: (port_no: number) => void) => {
 	let s = dgram.createSocket("udp4");
 	s.bind(0, null, () => {
 		let port_number = s.address().port;
@@ -13,11 +13,11 @@ let port = (cb) => {
 	});
 };
 
-let test = (name, fn) => {
+let test = (name: string, fn: (dns: mdns.mdns, t: tape.Test) => void) => {
 	tape(name, (t) => {
 		port((p) => {
 			let dns = new mdns.mdns({ ip: "127.0.0.1", port: p, multicast: false });
-			dns.on("warning", (e) => {
+			dns.on("warning", (e: Error) => {
 				t.error(e);
 			});
 			fn(dns, t);

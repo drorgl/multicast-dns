@@ -8,6 +8,7 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
+    "install" : "tsc",
     "test": "tsc && node dist/tests/test.js"
   },
   "bin": "./scripts/cli.js",

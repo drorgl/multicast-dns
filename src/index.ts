@@ -55,7 +55,6 @@ export class mdns extends events.EventEmitter {
 
 		if (type === "udp6" && (!ip || !opts.interface)) {
 			ip = "FF02::FB";
-			// throw new Error("For IPv6 multicast you must specify `ip` and `interface`");
 		}
 
 		this.socket = opts.socket || dgram.createSocket({
@@ -83,7 +82,7 @@ export class mdns extends events.EventEmitter {
 				return;
 			}
 
-			// this.emit("packet", message, rinfo);
+			this.emit("packet", message, rinfo);
 
 			if (message.type === "query") {
 				this.emit("query", message, rinfo);
@@ -107,30 +106,27 @@ export class mdns extends events.EventEmitter {
 			}
 		});
 
-		this.socket.bind(this.port, this.opts.interface, () => {
+		this.socket.bind(this.port, (this.opts) ? this.opts.interface : undefined, () => {
 			this.emit("ready");
 		});
-
-		// this.bind((err) => {
-		// 	if (err) { return this.emit("error", err); }
-		// 	this.emit("ready");
-		// });
-
 	}
 
+	public on(event: "packet", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
 	public on(event: "warning", listener?: (err: Error) => void): this;
 	public on(event: "error", listener?: (err: Error) => void): this;
 	public on(event: "response", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
 	public on(event: "query", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
-	public on(event: "query" | "error" | "warning" | "response", listener?: () => void): this {
+	public on(event: "query" | "error" | "warning" | "response" | "packet", listener?: () => void): this {
 		return super.on(event, listener);
 	};
 
+	public once(event: "packet", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
+	public once(event: "ready", listener?: () => void): this;
 	public once(event: "warning", listener?: (err: Error) => void): this;
 	public once(event: "error", listener?: (err: Error) => void): this;
 	public once(event: "response", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
 	public once(event: "query", listener?: (message: packet.header.IHeaderRecord, rinfo: IRHInfo) => void): this;
-	public once(event: "query" | "error" | "warning" | "response", listener?: () => void): this {
+	public once(event: "query" | "error" | "warning" | "response" | "ready" | "packet", listener?: () => void): this {
 		return super.once(event, listener);
 	};
 
@@ -139,13 +135,8 @@ export class mdns extends events.EventEmitter {
 		if (!cb) { cb = noop; }
 		if (!rinfo) { rinfo = this.me as IRHInfo; }
 
-
-		// this.bind((err) => {
-		// if (this.destroyed) { return cb(); }
-		// if (err) { return cb(err); }
 		let message = packet.encode(value);
 		this.socket.send(message, 0, message.length, rinfo.port, rinfo.address || rinfo.host, cb);
-		// });
 	};
 
 	public respond(res: packet.header.IHeaderRecord | packet.answer.IAnswer[], rinfo?: IRHInfo, cb?: ISendCallback) {
@@ -178,15 +169,4 @@ export class mdns extends events.EventEmitter {
 		this.socket.once("close", cb);
 		this.socket.close();
 	};
-
-	// private bind(cb: Function) {
-	// 	thunky((cb) => {
-	// 		if (!this.port) { return cb(null); }
-	// 		this.socket.once("error", cb);
-	// 		this.socket.bind(this.port, this.opts.interface, () => {
-	// 			this.socket.removeListener("error", cb);
-	// 			cb(null);
-	// 		});
-	// 	});
-	// }
 }
